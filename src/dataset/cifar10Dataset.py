@@ -34,7 +34,6 @@ class Cifar10Dataset(Dataset):
                 self.image_paths.append(os.path.join(unlabeled_dir, image_name))
                 self.labels.append(-1)                                              # -1 表示无标签
 
-        # 加载验证集
         labeled_dir = os.path.join(root, "label")
         for label in os.listdir(labeled_dir):
             label_dir = os.path.join(labeled_dir, label)
@@ -82,6 +81,3 @@ def get_data_loaders(root, batch_size=64, num_workers=4):
 
 
     return dataloader_train, dataloader_test
-
-if '__name__' == '__main__':
-    pass
