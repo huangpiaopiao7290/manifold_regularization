@@ -1,10 +1,9 @@
-## @author: piaopiao
+## @author: pp
 ## @date: 2024/9/17
 ## @description: 数据预处理
 
 import os
 from PIL import Image
-import numpy as np
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 
@@ -34,7 +33,14 @@ class Cifar10Dataset(Dataset):
                 self.image_paths.append(os.path.join(unlabeled_dir, image_name))
                 self.labels.append(-1)                                              # -1 表示无标签
 
-        labeled_dir = os.path.join(root, "label")
+        match os.path.split(root)[-1]:
+            case "train":
+                labeled_dir = os.path.join(root, "label")
+            case "test":
+                labeled_dir = root
+            case _:
+                labeled_dir = root
+
         for label in os.listdir(labeled_dir):
             label_dir = os.path.join(labeled_dir, label)
             label = os.path.split(label_dir)[-1]
@@ -52,7 +58,7 @@ class Cifar10Dataset(Dataset):
 
         # 图像增强
         if self.transform:
-            image = self.transform(image)
+            image_data = self.transform(image_data)
 
         return image_data, image_label
 
@@ -61,13 +67,14 @@ def get_data_loaders(root, batch_size=64, num_workers=4):
     :@param root: 数据集根目录
     """
     transform = transforms.Compose([
-        transforms.RandomResizedCrop((28, 28)),
+        transforms.RandomResizedCrop((28, 28)),  # CIFAR-10 的标准尺寸是 32x32
         transforms.RandomHorizontalFlip(0.5),
         transforms.RandomVerticalFlip(0.5),
         transforms.RandomGrayscale(0.1),
         transforms.RandomRotation(90),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-        transforms.ToTensor()
+        transforms.ToTensor(),  # 将 PIL 图像转换为 Tensor
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # 归一化
+
     ])
 
     dataset_train_path = os.path.join(root, "train")

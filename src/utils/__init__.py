@@ -1,1 +1,1 @@
-from .manifold_regularization import compute_manifold_regularization
+from .loss import compute_manifold_regularization

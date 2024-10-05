@@ -1,4 +1,4 @@
-## @auther: piaopiao
+## @auther: pp
 ## @date: 2024/9/14 2:40
 ## @description: 解压数据集文件，将数据分类
 
@@ -10,23 +10,21 @@ import numpy as np
 import random
 import shutil   
 from concurrent.futures import ThreadPoolExecutor
-import torch
 import torchvision.transforms as transforms
 
 # 定义日志级别
 logging.basicConfig(level=logging.INFO)
 
 ## 获取工作目录
-work_sapce = os.getcwd()
+work_space = os.getcwd()
 
 # 读取tar.gz文件
-cifar10_tar_gz = os.path.join(work_sapce, "data", "raw", "cifar", "cifar-10-python.tar.gz")
-extract_path = os.path.join(work_sapce, "data", "raw", "cifar", "cifar-10")
+cifar10_tar_gz = os.path.join(work_space, "data", "raw", "cifar", "cifar-10-python.tar.gz")
+extract_path = os.path.join(work_space, "data", "raw", "cifar", "cifar-10")
 
 # Step2: 解压tar.gz文件
 def untar(file_path, extract_to="."):
     """解压tar.gz到目标目录"""
-    
     if os.path.exists(extract_path):
         return
     else:
@@ -45,7 +43,7 @@ def untar(file_path, extract_to="."):
 labels = ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
 
 # 在目标位置创建train test
-processed_dir = os.path.join(work_sapce, "data", "processed")
+processed_dir = os.path.join(work_space, "data", "processed")
 
 def create_cifar10_dir(file_path):
     """
@@ -223,7 +221,7 @@ def move_images(source, dest, prop):
 
 if __name__ == '__main__':
     # 1.解压
-    untar(cifar10_tar_gz, extract_path)
+    # untar(cifar10_tar_gz, extract_path)
     # 2.解码数据并保存
     create_cifar10_dir("cifar-10")
     # cifar10路径

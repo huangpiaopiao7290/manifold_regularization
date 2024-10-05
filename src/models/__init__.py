@@ -1,1 +1,1 @@
-from .manifold import ManifoldCNN
+from .vgg import VggNet
