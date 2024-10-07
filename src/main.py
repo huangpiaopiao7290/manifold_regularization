@@ -4,7 +4,7 @@
 
 from models.vgg import VggNet
 from dataset.cifar10Dataset import get_data_loaders
-# from src.utils.loss import compute_adjacency_matrix, consistency_loss, criterion_supervised, smoothness_loss, total_loss
+from src.utils.loss import total_loss
 
 import torch
 import torch.nn as nn
@@ -36,10 +36,10 @@ loss_func = nn.CrossEntropyLoss()
 
 if __name__ == '__main__':
     from multiprocessing import freeze_support
-
     freeze_support()
 
     logging.info("start...")
+
 
     # 加载数据
     cifar10_dir = os.path.join(data_dir, "cifar-10")
@@ -57,6 +57,9 @@ if __name__ == '__main__':
     for epoch in range(epochs):
         logging.log(logging.INFO, "epoch is {}".format(epoch))
         model.train()
+        running_loss = 0.0
+        correct = 0.0
+        total = 0.0
 
         for i, data in enumerate(train_loader):
             inputs, labels = data
@@ -64,29 +67,34 @@ if __name__ == '__main__':
 
             # 前向传播
             outputs = model(inputs)
-        
-            # loss    
-            # 过滤带无标签数据
+
+            # 过滤无标签数据
             labeled_mask = (labels != -1)
-            if labeled_mask.any():
-                inputs, has_labels = inputs[labeled_mask], labels[labeled_mask]
-                labeled_outputs = outputs[labeled_mask]
-                # 1.计算带标签数据的交叉熵损失
-                loss = loss_func(labeled_outputs, has_labels)
-            else:
-                continue
-            
+            no_labels_mask = (labels == -1)
+
+            # 带标签数据 对应标签索引
+            inputs_labels, has_labels = inputs[labeled_mask], labels[labeled_mask]
+            outputs_labels = outputs[labeled_mask]
+            # 1.计算带标签数据的交叉熵损失
+            # loss = loss_func(outputs_labels, has_labels)
+
+            # 计算总损失
+            loss, w = total_loss(model=model, images=inputs, labels=labels,
+                                 unlabeled_mask=no_labels_mask, lambda_c=lambda_c, lambda_s=lambda_s)
+
             # 反向传播优化
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
-            # 
-            _, prd = torch.max(outputs.data, dim=1)
-            correct = prd.eq(labels.data).cpu().sum()
-            logging.log(logging.INFO, 
-                        f"step {i}, loss={loss.item()}, mini-batch correct is {100.0 * correct / batch_size},"
-                        f" learning rate is {optimizer.state_dict()['param_groups'][0]['lr']}")
+            # 统计正确预测的数量
+            with torch.no_grad():
+                _, predicted = torch.max(outputs.data, dim=1)
+                total += labels.size(0)
+                correct = (predicted.eq(labels.data).cpu().sum())
+                logging.log(logging.INFO,
+                            f"step {i}, loss={loss.item()}, mini-batch correct is {100.0 * correct / batch_size},"
+                            f" learning rate is {optimizer.state_dict()['param_groups'][0]['lr']}")
 
         # 更新学习率
         scheduler.step()
