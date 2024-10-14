@@ -1,16 +1,18 @@
-# import torch
+# import asyncio
 #
-# labels = torch.tensor([-1,-1,-1,-1,-1,0,3,-1,9,2,6,-1,-1,2,3])
-# labeled_mask = (labels != -1)
-# print(labeled_mask)
+# from src.utils.utility import Utility
 #
-# if labeled_mask.any():
-#     targets = labels[labeled_mask]
-#     print(targets)
-# else:
-#     print("no label\n")
+# async def test_move_file():
+#     src = r'C:\piao_programs\py_programs\DeepLearningProject\Manifold_SmiLearn\data\processed\cifar-10\test\airplane\aeroplane_s_000002.png'
+#     dst = r'C:\piao_programs\py_programs\DeepLearningProject\Manifold_SmiLearn\data\processed'
+#     await Utility._move_file(src, dst)
+#
+# if __name__ == '__main__':
+#     asyncio.run(test_move_file())
 import os
-directory = os.getcwd()
-print(directory)
 
+# 假设当前工作目录是 manifold/src
+current_dir = os.getcwd()
+project_root = os.path.abspath(os.path.join(current_dir, '..'))
 
+print(project_root)

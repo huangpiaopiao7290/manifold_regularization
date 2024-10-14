@@ -7,10 +7,68 @@ import torch
 import torch.nn as nn
 
 
-__all__ = ['compute_adjacency_matrix', 'consistency_loss', 'criterion_supervised', 'smoothness_loss', 'total_loss']
-
+__all__ = [
+    'compute_adjacency_matrix_cpu',
+    'compute_adjacency_matrix'
+    'consistency_loss',
+    'criterion_supervised',
+    'smoothness_loss',
+    'total_loss'
+]
 
 def compute_adjacency_matrix(features, k=8, sigma=1.0):
+    r"""
+    calculate adjacency matrix
+
+    the input: a batch feature which size is [N, D], N is the number of samples, D is the feature dimension
+    the `target` that an adjacency matrix which size is [N, N]
+    K-NN algorithm is used to calculate the adjacency matrix, and the Gaussian kernel is used to smooth the adjacency matrix
+    Gaussian kernel:
+        -- math:
+            W[i, j] = exp(-||x_i - x_j||^2 / (2 * \sigma^2)),
+    inside the exp function, the ||x_i - x_j|| is the Euclidean distance between x_i and x_j.
+    in order to avoid the calculation of square root, we use the square of the Euclidean distance.
+    the `params`: 
+        features: the input feature, a tensor with size [N, D]
+        k: the number of nearest neighbors, an integer
+        sigma: the parameter of the Gaussian kernel, a float
+    """
+        # 将多维特征展平成二维张量
+    if len(features.shape) > 2:
+        features = features.view(features.size(0), -1)
+    
+    # 确保所有张量都在同一个设备上
+    features = features.to(device)
+    
+    # 计算每对样本之间的欧式距离
+    pairwise_distances = torch.cdist(features, features, p=2.0)
+    
+    # 找到每个样本的 k 个最近邻居
+    _, indices = torch.topk(pairwise_distances, k, largest=False, dim=1)
+    
+    # 初始化邻接矩阵
+    _n = features.shape[0]
+    _w = torch.zeros((_n, _n), device=device)
+    
+    # 对于每个样本 i, 找到它的 k 个最近邻居 j，计算高斯核函数值并赋值给邻接矩阵
+    for i in range(_n):
+        for j in indices[i]:
+            if i != j:  # 跳过自身
+                dist = pairwise_distances[i, j]
+                _w[i, j] = torch.exp(-dist ** 2 / (2 * sigma ** 2))
+
+    # 归一化
+    try:
+        row_sum = _w.sum(dim=1, keepdim=True).view(-1, 1)
+        _w = _w / (row_sum + 1e-8)
+    except ValueError as e:
+        # 除数为零错误
+        raise ValueError("calculation error: {}".format(e))
+
+    return _w
+
+
+def compute_adjacency_matrix_cpu(features, k=8, sigma=1.0):
     """
     calculate adjacency matrix
 
@@ -22,11 +80,16 @@ def compute_adjacency_matrix(features, k=8, sigma=1.0):
             W[i, j] = exp(-||x_i - x_j||^2 / (2 * sigma^2)),
     inside the exp function, the ||x_i - x_j|| is the Euclidean distance between x_i and x_j.
     in order to avoid the calculation of square root, we use the square of the Euclidean distance.
-    the `params`:
+    the `params`: 
         features: the input feature, a tensor with size [N, D]
         k: the number of nearest neighbors, an integer
         sigma: the parameter of the Gaussian kernel, a float
     """
+
+    # 展平特征
+    if len(features.shape) > 2:
+        features = features.view(features.size(0), -1)
+
     # 将tensor转换为numpy
     features_np = features.detach().cpu().numpy()
     # 使用K-NN找到每个样本的k个最近邻居
@@ -50,7 +113,7 @@ def compute_adjacency_matrix(features, k=8, sigma=1.0):
         _w = _w / (row_sum + 1e-8)
     except ValueError as e:
         # 除数为零错误
-        raise ValueError("calculation error: ｛｝".format(e))
+        raise ValueError("calculation error: {}".format(e))
 
     return _w
 
@@ -115,10 +178,12 @@ def smoothness_loss(features, w):
     :param features: adjacency matrix, represents the feature vector for each sample
     :param w: weight matrix, which indicates the strength or similarity of connections between different samples
     """
-    # 所有样本特征两两之间的差异矩阵
-    diff = features.unsqueeze(0) - features.unsqueeze(1)
-    # 计算 diff 的平方和 沿着最后一个维度求和  (每对样本之间的欧氏距离平方)
-    squared_diff = (diff ** 2).sum(dim=-1)
+    # 将多维特征展平为二位张量
+    if len(features.shape) > 2:
+        features = features.view(features.size(0), -1)
+    
+    # 计算 diff (样本特征两两之间的差异矩阵) 的平方和 沿着最后一个维度求和  (每对样本之间的欧氏距离平方)
+    squared_diff = (features.unsqueeze(0) - features.unsqueeze(1) ** 2).sum(dim=-1)
     loss = (w * squared_diff).sum() / 2
     return loss
 
@@ -153,15 +218,18 @@ def total_loss(model, images, labels, unlabeled_mask, lambda_c, lambda_s):
         with torch.no_grad():
             teacher_outputs = model(unlabeled_images)
         interpolated_teacher_outputs = lam * teacher_outputs + (1 - lam) * teacher_outputs
-        loss_consistency = consistency_loss(mixed_outputs, interpolated_teacher_outputs, unlabeled_mask)
+        # 使用无标签数据的掩码
+        # loss_consistency = consistency_loss(mixed_outputs, interpolated_teacher_outputs, unlabeled_mask)
+        loss_consistency = consistency_loss(mixed_outputs, interpolated_teacher_outputs,
+                                            torch.ones_like(mixed_outputs[:, 0], dtype=torch.bool))
     else:
         loss_consistency = 0.0
     
     # 平滑性损失
-    feature_extractor = nn.Sequential(*list(model.children())[:-1])  # 假设倒数第二层是特征提取器
+    feature_extractor = nn.Sequential(*list(model.children())[:-1])     # 假设倒数第二层是特征提取器
     with torch.no_grad():
         features = feature_extractor(images)
-    w = compute_adjacency_matrix(features)
+    w = compute_adjacency_matrix_cpu(features)
     loss_smoothness = smoothness_loss(features, w)
     
     # 总损失

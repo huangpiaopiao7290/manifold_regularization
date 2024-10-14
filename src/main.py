@@ -4,42 +4,58 @@
 
 from models.vgg import VggNet
 from dataset.cifar10Dataset import get_data_loaders
-from src.utils.loss import total_loss
+from utils.lossFunction import LossFunctions
+from torch.utils.tensorboard import SummaryWriter
 
 import torch
-import torch.nn as nn
 import torch.optim as optim
 import os
+import yaml
 import logging
+import logging.config
 
-# 配置日志
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-device = torch.device("cuda" if torch.cuda.is_available else "cpu")
+current_dir = os.getcwd()
+project_root = os.path.abspath(os.path.join(current_dir, '..'))
+# 日志文件保存位置
+log_dir = 'log'  # 你可以根据需要更改这个路径
+os.makedirs(log_dir, exist_ok=True)
+os.environ['LOG_DIR'] = log_dir
+
+# 加载日志配置文件
+with open('logging.yaml', 'r') as f:
+    log_config = yaml.safe_load(f)
+logging.config.dictConfig(log_config)
+
+# 获取日志记录器
+logger = logging.getLogger('exampleLogger')  # 这里使用新的日志记录器名称
+
+# TensorBoard 记录器
+writer = SummaryWriter(log_dir=log_dir)
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 
 epochs: int = 200                   # 训练批次
 batch_size = 64                     # 批大小
 learning_rate: float = 0.01         # 学习率
-lambda_c: float = 1.0               # 一致性损失权重
-lambda_s: float = 1.0                # 平滑性损失权重
+lambda_c: float = 0.1              # 一致性损失权重
+lambda_s: float = 0.1                # 平滑性损失权重
 alpha: float = 0.99                 # EMA动量项
 
 data_dir = os.path.join(os.getcwd(), "data", "processed")
 
 model = VggNet(num_class=10).to(device)
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer=optimizer, step_size=5, gamma=0.9)
+scheduler = torch.optim.lr_scheduler.StepLR(optimizer=optimizer, step_size=10, gamma=0.9)
 
-loss_func = nn.CrossEntropyLoss()
-
+lossFunc = LossFunctions(device=device)
 
 if __name__ == '__main__':
     from multiprocessing import freeze_support
     freeze_support()
 
     logging.info("start...")
-
 
     # 加载数据
     cifar10_dir = os.path.join(data_dir, "cifar-10")
@@ -79,7 +95,7 @@ if __name__ == '__main__':
             # loss = loss_func(outputs_labels, has_labels)
 
             # 计算总损失
-            loss, w = total_loss(model=model, images=inputs, labels=labels,
+            loss, w = lossFunc.total_loss(model=model, images=inputs, labels=labels,
                                  unlabeled_mask=no_labels_mask, lambda_c=lambda_c, lambda_s=lambda_s)
 
             # 反向传播优化
@@ -91,19 +107,18 @@ if __name__ == '__main__':
             with torch.no_grad():
                 _, predicted = torch.max(outputs.data, dim=1)
                 total += labels.size(0)
-                correct = (predicted.eq(labels.data).cpu().sum())
-                logging.log(logging.INFO,
-                            f"step {i}, loss={loss.item()}, mini-batch correct is {100.0 * correct / batch_size},"
-                            f" learning rate is {optimizer.state_dict()['param_groups'][0]['lr']}")
+                correct += (predicted.eq(labels.data)).sum().item()
+                accuracy = 100.0 * correct / total
+                logging.debug(f"step {i}, loss={loss.item()}, mini-batch correct is {accuracy: .2f}"
+                              f" learning rate is {optimizer.state_dict()['param_groups'][0]['lr']}")
 
+                # 记录到 TensorBoard
+                writer.add_scalar('Train/Loss', loss.item(), epoch * len(train_loader) + i)
+                writer.add_scalar('Train/Mini-Batch Accuracy', accuracy, epoch * len(train_loader) + i)
+                writer.add_scalar('Train/Learning Rate', optimizer.state_dict()['param_groups'][0]['lr'],
+                                  epoch * len(train_loader) + i)
         # 更新学习率
         scheduler.step()
-
-        # 保存模型
-        if not os.path.exists(os.path.join(os.getcwd(), "models_t")):
-            os.mkdir("models_t")
-        torch.save(model.state_dict(), "models_t/{}".format(epoch + 1))
-
         # 测试
         model.eval()
         test_correct = 0
@@ -117,7 +132,24 @@ if __name__ == '__main__':
                 test_correct += (test_predicted == test_labels).sum().item()
 
         # 打印测试准确率
-        logging.info(f"Test Accuracy: {100 * test_correct / test_total:.2f}%")
+        test_accuracy = 100 * test_correct / test_total
+        logging.info(f"Test Accuracy: {test_accuracy:.2f}%")
+
+        # 根据测试集的表现调整超参数 ----------- TODO 修改
+        if test_accuracy < 80.0:
+            lambda_c *= 0.9
+            lambda_s *= 1.1
+        elif test_accuracy > 90.0:
+            lambda_c *= 1.1
+            lambda_s *= 0.9
+
+        # 记录到 TensorBoard
+        writer.add_scalar('Validation/Accuracy', test_accuracy, epoch)
+
+        # 保存最佳模型
+        if not os.path.exists(os.path.join(os.getcwd(), "models_t")):
+            os.mkdir("models_t")
+        torch.save(model.state_dict(), "models_t/{}".format(epoch + 1))
 
     logging.info("Training completed.")
             

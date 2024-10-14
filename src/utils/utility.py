@@ -2,12 +2,13 @@
 ## @date: 2024/10/5
 ## @description:
 import os
+import pickle
 import tarfile
 import logging
-from concurrent.futures import ThreadPoolExecutor
 import shutil
 import random
-import aiofiles
+from shutil import copy2
+import asyncio
 
 logging.basicConfig(level=logging.INFO)     # 定义日志级别
 work_space = os.getcwd()
@@ -24,6 +25,15 @@ class Utility:
                 logging.info(f"extracted {member.name} to {extract_to}")
 
     @staticmethod
+    def parse_pickle(file):
+        """
+        解析pickle文件
+        """
+        with open(file, 'rb') as fo:
+            dct = pickle.load(fo, encoding='bytes')
+        return dct
+
+    @staticmethod
     def find_filenames_with_keyword(root_dir, keyword):
         """查找指定文件路径"""
         match_files = []
@@ -32,7 +42,7 @@ class Utility:
         return match_files
 
     @staticmethod
-    async def move_files_async(source, dest, prop):
+    async def move_files(source, dest, prop):
         """随机选择一定比例的文件并移动"""
         files = os.listdir(source)
         num_files = len(files)
@@ -48,7 +58,20 @@ class Utility:
     async def _move_file(src, dst):
         """异步移动单个文件"""
         try:
-            await aiofiles.os.rename(src, dst)
+            if hasattr(asyncio, 'to_thread'):
+                await asyncio.to_thread(shutil.move, src, dst, copy2)
+            else:
+                loop = asyncio.get_event_loop()
+                await loop.run_in_executor(None, shutil.move, src, dst, copy2)
+        except Exception as e:
+            logging.error(f"Failed to move {src} to {dst}: {e}")
+
+    @staticmethod
+    def move_file_sync(src, dst):
+        """同步移动单个文件"""
+        try:
+            shutil.move(src, dst)
+            logging.info(f"moved {src} to {dst}")
         except Exception as e:
             logging.error(f"Failed to move {src} to {dst}: {e}")
 
