@@ -70,8 +70,8 @@ def create_cifar10_dir(file_path):
 # 官网提供pickle文件解析方法
 def unpickle(file):
     with open(file, 'rb') as fo:
-        dict = pickle.load(fo, encoding='bytes')
-    return dict
+        dct = pickle.load(fo, encoding='bytes')
+    return dct
 
 def find_filenames_with_keyword(root_dir, keyword):
     """
@@ -81,9 +81,9 @@ def find_filenames_with_keyword(root_dir, keyword):
     """
     match_files = []
     # 遍历目录树
-    for dirpath, dirnames, files in os.walk(root_dir):
+    for dir_path, dir_names, files in os.walk(root_dir):
         # 筛选出包含关键字的文件名
-        match_files.extend([os.path.join(dirpath, file) for file in files if keyword in file])
+        match_files.extend([os.path.join(dir_path, file) for file in files if keyword in file])
     return match_files
 
 def save_image(img_data, img_extract_path):
@@ -92,7 +92,6 @@ def save_image(img_data, img_extract_path):
     :@param img_data: 图像数据
     :@param img_extract_path: 图像路径
     """
-
     # 将一维数组重塑为 (3, 32, 32) 的形状
     img_data = np.reshape(img_data, (3, 32, 32))
     img_data = np.transpose(img_data, (1,2,0))
@@ -122,7 +121,7 @@ def decode_and_generate(batch_file, target_base_file):
     # 将train_list, test_list合并
     dataset: list = [(trl, 'train') for trl in train_list] + [(tsl, 'test') for tsl in test_list]
 
-    # 分组[name, lable, data]存储
+    # 分组[name, label, data]存储
     for tl_path, set_type in dataset:
         # unpickle
         batch_dict: dict = unpickle(tl_path)
@@ -133,7 +132,7 @@ def decode_and_generate(batch_file, target_base_file):
             target_file = os.path.join(target_base_file, "test")
         
         # 拿到对应name和data根据label->存放到train对应文件夹下
-        with ThreadPoolExecutor(max_workers=10) as excutor:         # 线程数<=10
+        with ThreadPoolExecutor(max_workers=10) as executor:         # 线程数<=10
             futures = []
             for im_idx, im_data in enumerate(batch_dict[b'data']):
                 im_label: int = batch_dict[b'labels'][im_idx]               # 图片标签
@@ -144,7 +143,7 @@ def decode_and_generate(batch_file, target_base_file):
                 # 存储到训练集相同标签下
                 im_path_label = os.path.join(target_file, labels[im_label], im_name.decode('utf-8'))
                 # 提交任务给线程池
-                future = excutor.submit(save_image, im_data, im_path_label)
+                future = executor.submit(save_image, im_data, im_path_label)
                 futures.append(future)
 
             for future in futures:

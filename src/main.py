@@ -11,7 +11,6 @@ import torch
 import torch.optim as optim
 import os
 import yaml
-import logging
 import logging.config
 
 

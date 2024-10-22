@@ -75,4 +75,10 @@ class Utility:
         except Exception as e:
             logging.error(f"Failed to move {src} to {dst}: {e}")
 
-
+    @staticmethod
+    def find_filenames_with_keyword(root_dir, keyword):
+        # 查找包含关键字的文件
+        match_files = []
+        for dirpath, _, files in os.walk(root_dir):
+            match_files.extend([os.path.join(dirpath, file) for file in files if keyword in file])
+        return match_files

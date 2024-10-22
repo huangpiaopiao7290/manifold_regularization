@@ -9,7 +9,7 @@ import torch.nn as nn
 
 __all__ = [
     'compute_adjacency_matrix_cpu',
-    'compute_adjacency_matrix'
+    'compute_adjacency_matrix',
     'consistency_loss',
     'criterion_supervised',
     'smoothness_loss',
