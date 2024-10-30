@@ -1,6 +1,9 @@
+## @auther: pp
+## @date: 2024/10/30
+## @description: 损失函数
+
 import torch
 import torch.nn as nn
-from sklearn.neighbors import NearestNeighbors
 
 class LossFunctions:
     def __init__(self, device='cpu'):

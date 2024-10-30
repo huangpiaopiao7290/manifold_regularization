@@ -14,23 +14,27 @@ import yaml
 import logging.config
 
 
-current_dir = os.getcwd()
-project_root = os.path.abspath(os.path.join(current_dir, '..'))
+current_dir = os.path.join(os.getcwd(), 'src')
+application_yml_path = os.path.join(current_dir, 'application.yml')
+
 # 日志文件保存位置
-log_dir = 'log'  # 你可以根据需要更改这个路径
+log_dir = os.path.join(os.getcwd(), 'log')
+# tensorboard记录位置
+lod_dir_tensorboard= os.path.join(log_dir, 'logdir')
 os.makedirs(log_dir, exist_ok=True)
 os.environ['LOG_DIR'] = log_dir
 
 # 加载日志配置文件
-with open('logging.yaml', 'r') as f:
+with open(application_yml_path, 'r') as f:
     log_config = yaml.safe_load(f)
+log_config['handlers']['fileHandler']['filename'] = os.path.join(log_dir, 'training.log')
 logging.config.dictConfig(log_config)
 
 # 获取日志记录器
 logger = logging.getLogger('exampleLogger')  # 这里使用新的日志记录器名称
 
 # TensorBoard 记录器
-writer = SummaryWriter(log_dir=log_dir)
+writer = SummaryWriter(log_dir=lod_dir_tensorboard)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
@@ -121,6 +125,7 @@ if __name__ == '__main__':
         # 测试
         model.eval()
         test_correct = 0
+        
         test_total = 0
         with torch.no_grad():
             for j, (test_inputs, test_labels) in enumerate(test_loader):

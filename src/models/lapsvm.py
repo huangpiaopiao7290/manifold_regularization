@@ -4,9 +4,6 @@
 
 
 import numpy as np
-from numpy.ma.core import shape
-from scipy.optimize import minimize
-from scipy.spatial.distance import cdist
 from sklearn.neighbors import kneighbors_graph
 from scipy import sparse
 
