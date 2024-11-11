@@ -67,7 +67,7 @@ class LossFunctions:
         return _w
 
     def mix_up(self, x1, x2, alpha=0.75):
-        """
+        r"""
         By performing a simple linear transformation of the input data
         -- math:
             x = alpha * x1 + (1 - alpha) * x2
@@ -172,7 +172,7 @@ class LossFunctions:
             loss_consistency = 0.0
         
         # 平滑性损失
-        feature_extractor = nn.Sequential(*list(model.children())[:-1])     # 假设倒数第二层是特征提取器
+        feature_extractor = nn.Sequential(*list(model.children())[:-1])
         with torch.no_grad():
             features = feature_extractor(images)
         w = self.compute_adjacency_matrix(features)

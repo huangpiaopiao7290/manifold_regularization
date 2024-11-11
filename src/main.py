@@ -4,7 +4,8 @@
 
 from models.vgg import VggNet
 from dataset.cifar10Dataset import get_data_loaders
-from utils.lossFunction import LossFunctions
+# from utils.lossFunction import LossFunctions
+from utils.lossFunction_PWMR import LossFunctionsPWMR
 from torch.utils.tensorboard import SummaryWriter
 
 import torch
@@ -52,7 +53,9 @@ model = VggNet(num_class=10).to(device)
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer=optimizer, step_size=10, gamma=0.9)
 
-lossFunc = LossFunctions(device=device)
+# 损失函数
+# lossFunc = LossFunctions(device=device)
+lossFunc = LossFunctionsPWMR(device=device)
 
 if __name__ == '__main__':
     from multiprocessing import freeze_support
@@ -88,20 +91,23 @@ if __name__ == '__main__':
             outputs = model(inputs)
 
             # 过滤无标签数据
-            labeled_mask = (labels != -1)
             no_labels_mask = (labels == -1)
 
-            # 带标签数据 对应标签索引
-            inputs_labels, has_labels = inputs[labeled_mask], labels[labeled_mask]
-            outputs_labels = outputs[labeled_mask]
-            # 1.计算带标签数据的交叉熵损失
-            # loss = loss_func(outputs_labels, has_labels)
+            # # 带标签数据 对应标签索引
+            # inputs_labels, has_labels = inputs[labeled_mask], labels[labeled_mask]
+            # outputs_labels = outputs[labeled_mask]
 
             # 计算总损失
-            loss, w = lossFunc.total_loss(model=model, images=inputs, labels=labels,
-                                 unlabeled_mask=no_labels_mask, lambda_c=lambda_c, lambda_s=lambda_s)
 
-            # 反向传播优化
+            features = model.extract_features(inputs)
+
+            # loss, w = lossFunc.total_loss(model=model, images=inputs, labels=labels,
+            #                      unlabeled_mask=no_labels_mask, lambda_c=lambda_c, lambda_s=lambda_s)
+
+            loss, w, local_identities = lossFunc.total_loss(model=model, images=inputs, labels=labels,
+                                          unlabeled_mask=no_labels_mask, lambda_c=lambda_c, lambda_s=lambda_s)
+
+            # 反向传播
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()

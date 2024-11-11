@@ -19,3 +19,15 @@ data
 └── yahooAnswers
     └── yahoo_answers_csv.tar.gz
 ```
+
+
+smooth_loss
+
+$$
+    Loss = Tr(DFLF^{T})
+$$
+D: 对角阵, 局部密度d  
+F：特征矩阵(N, D) 节点数N 特征维度D
+L：图拉普拉斯矩阵(N, N)
+
+
