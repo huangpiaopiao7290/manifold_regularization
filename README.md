@@ -21,13 +21,14 @@ data
 ```
 
 
-smooth_loss
+- conda环境配置:   
+dl_environment.yml 
+- 先安装miniconda3或anaconda
+```c
+// 创建conda环境
+conda env create -f environment.yml
 
-$$
-    Loss = Tr(DFLF^{T})
-$$
-D: 对角阵, 局部密度d  
-F：特征矩阵(N, D) 节点数N 特征维度D
-L：图拉普拉斯矩阵(N, N)
-
+conda activate dl
+conda list
+```
 
