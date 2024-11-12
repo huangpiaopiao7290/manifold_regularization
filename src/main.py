@@ -31,8 +31,8 @@ with open(application_yml_path, 'r') as f:
 log_config['handlers']['fileHandler']['filename'] = os.path.join(log_dir, 'training.log')
 logging.config.dictConfig(log_config)
 
-# 获取日志记录器
-logger = logging.getLogger('exampleLogger')  # 这里使用新的日志记录器名称
+# # 获取日志记录器
+logger = logging.getLogger('exampleLogger')
 
 # TensorBoard 记录器
 writer = SummaryWriter(log_dir=lod_dir_tensorboard)
@@ -43,9 +43,11 @@ os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 epochs: int = 200                   # 训练批次
 batch_size = 64                     # 批大小
 learning_rate: float = 0.01         # 学习率
-lambda_c: float = 0.1              # 一致性损失权重
-lambda_s: float = 0.1                # 平滑性损失权重
+lambda_c: float = 0.1               # 一致性损失权重
+lambda_s: float = 0.1               # 平滑性损失权重
 alpha: float = 0.99                 # EMA动量项
+best_test_accuracy = 90            # 准确率
+
 
 data_dir = os.path.join(os.getcwd(), "data", "processed")
 
@@ -63,7 +65,7 @@ if __name__ == '__main__':
 
     logging.info("start...")
 
-    # 加载数据
+    # 加载数据cifar10
     cifar10_dir = os.path.join(data_dir, "cifar-10")
     if not os.path.exists(cifar10_dir):
         logging.error("CIFAR-10 dataset directory does not exist: %s", cifar10_dir)
@@ -118,8 +120,8 @@ if __name__ == '__main__':
                 total += labels.size(0)
                 correct += (predicted.eq(labels.data)).sum().item()
                 accuracy = 100.0 * correct / total
-                logging.debug(f"step {i}, loss={loss.item()}, mini-batch correct is {accuracy: .2f}"
-                              f" learning rate is {optimizer.state_dict()['param_groups'][0]['lr']}")
+                # logging.debug(f"step {i}, loss={loss.item()}, mini-batch correct is {accuracy: .2f}"
+                #               f" learning rate is {optimizer.state_dict()['param_groups'][0]['lr']}")
 
                 # 记录到 TensorBoard
                 writer.add_scalar('Train/Loss', loss.item(), epoch * len(train_loader) + i)
@@ -157,9 +159,12 @@ if __name__ == '__main__':
         writer.add_scalar('Validation/Accuracy', test_accuracy, epoch)
 
         # 保存最佳模型
-        if not os.path.exists(os.path.join(os.getcwd(), "models_t")):
-            os.mkdir("models_t")
-        torch.save(model.state_dict(), "models_t/{}".format(epoch + 1))
+        if test_accuracy > best_test_accuracy:
+            best_test_accuracy = test_accuracy
+            if not os.path.exists(os.path.join(os.getcwd(), "models_t")):
+                os.mkdir("models_t")
+            torch.save(model.state_dict(), "models_t/{}.pt".format(epoch))
+            logging.info(f"Saved new best model with accuracy: {best_test_accuracy:.2f}%")
 
     logging.info("Training completed.")
             
