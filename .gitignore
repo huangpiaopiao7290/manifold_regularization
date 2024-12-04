@@ -1,3 +1,4 @@
 data/
 /data/raw/*.tar.gz
 /data/processed/
+.idea

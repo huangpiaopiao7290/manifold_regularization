@@ -1,6 +1,6 @@
 ## @author: pp
 ## @date: 2024/9/17
-## @description: ciFar10数据集加载
+## @description: ciFar100数据集加载
 
 import os
 from torch.utils.data import DataLoader
@@ -8,19 +8,11 @@ from torchvision import transforms
 
 from .cifarDataset import CiFarDataset
 
-# cifar-10路径
-# cifar10 = os.path.join(os.getcwd(), "data", "processed", "cifar-10")
-#
-# label_names = ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
-# labels_dict = {}
-# for idx, name in enumerate(label_names):
-#     labels_dict[name] = idx
+class CiFar100Dataset(CiFarDataset):
+    def __init__(self, root, label_names_dict, transform=None):
+        super(CiFar100Dataset, self).__init__(root, label_names_dict, transform)
 
-class CiFar10Dataset(CiFarDataset):
-    def __init__(self, root, label_names_dict, transform=None) -> None:
-        super(CiFar10Dataset, self).__init__(root, label_names_dict, transform)
-
-def get_data10_loaders(root, label_names_dict,  batch_size=64, num_workers=4):
+def get_data100_loaders(root, label_names_dict,  batch_size=64, num_workers=4):
     """
     :@param root: 数据集根目录
     """
@@ -42,12 +34,8 @@ def get_data10_loaders(root, label_names_dict,  batch_size=64, num_workers=4):
     dataset_train_path = os.path.join(root, "train")
     dataset_test_path = os.path.join(root, "test")
 
-    dataset_train = CiFar10Dataset(root=dataset_train_path,
-                                   label_names_dict=label_names_dict,
-                                   transform=train_transform)
-    dataset_test = CiFar10Dataset(root=dataset_test_path,
-                                  label_names_dict=label_names_dict,
-                                  transform=test_transform)
+    dataset_train = CiFar100Dataset(root=dataset_train_path,label_names_dict=label_names_dict, transform=train_transform)
+    dataset_test = CiFar100Dataset(root=dataset_test_path, label_names_dict=label_names_dict, transform=test_transform)
 
     dataloader_train = DataLoader(dataset_train, batch_size=batch_size, shuffle=True, num_workers=num_workers)
     dataloader_test = DataLoader(dataset_test, batch_size=batch_size, shuffle=False, num_workers=num_workers)

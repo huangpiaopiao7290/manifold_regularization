@@ -11,12 +11,15 @@ from shutil import copy2
 import asyncio
 
 logging.basicConfig(level=logging.INFO)     # 定义日志级别
-work_space = os.getcwd()
 
 class Utility:
     @staticmethod
     def un_tar(file_path, extract_to="."):
-        """解压tar.gz到目标目录"""
+        """
+        解压tar.gz到目标目录
+        @param file_path:
+        @param extract_to:
+        """
         if not os.path.exists(extract_to):
             os.makedirs(extract_to)
         with tarfile.open(file_path, 'r:gz') as tar:
@@ -34,7 +37,7 @@ class Utility:
         return dct
 
     @staticmethod
-    def find_filenames_with_keyword(root_dir, keyword):
+    def find_filenames_with_keywords(root_dir, keyword):
         """查找指定文件路径"""
         match_files = []
         for dir_path, _, files in os.walk(root_dir):
@@ -79,6 +82,12 @@ class Utility:
     def find_filenames_with_keyword(root_dir, keyword):
         # 查找包含关键字的文件
         match_files = []
-        for dirpath, _, files in os.walk(root_dir):
-            match_files.extend([os.path.join(dirpath, file) for file in files if keyword in file])
+        for dir_path, _, files in os.walk(root_dir):
+            match_files.extend([os.path.join(dir_path, file) for file in files if keyword in file])
+
         return match_files
+
+    @staticmethod
+    def setup_logging(self, ):
+
+

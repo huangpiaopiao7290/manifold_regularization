@@ -100,16 +100,17 @@ class LossFunctionsPWMR:
         loss = (loss * mask.unsqueeze(1)).sum() / (mask.sum() + 1e-8)
         return loss
 
-    def total_loss(self, model, images, labels, unlabeled_mask, lambda_c, lambda_s):
+    def total_loss(self, model, outputs, images, labels, unlabeled_mask, lambda_c, lambda_s):
         r"""
         Calculate the total loss with the PW_MR algorithm.
         """
         # 获取模型预测
-        outputs = model(images)
+        # outputs = model(images)
 
         # 分割有标签和无标签的数据
-        labeled_outputs = outputs[~unlabeled_mask]
-        labeled_labels = labels[~unlabeled_mask]
+        labeled_mask = (labels != -1)
+        labeled_outputs = outputs[labeled_mask]
+        labeled_labels = labels[labeled_mask]
 
         # 带标签样本的交叉熵损失
         loss_supervised = self.criterion_supervised(labeled_outputs, labeled_labels)

@@ -28,3 +28,5 @@ loggers:
 root:
   level: INFO
   handlers: [consoleHandler]
+
+#data-directory: 1

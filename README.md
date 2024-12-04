@@ -32,3 +32,31 @@ conda activate dl
 conda list
 ```
 
+---
+
+- 创建cifar100训练集、验证集、测试集
+```shell
+python src/dataset/cifar100Peocessor.py
+```
+- 加载cifar100
+```pythonregexp
+ciFar100Dataset.py
+```
+
+
+- 加载imdb数据集
+
+
+- 预处理雅虎评论数据集
+- 加载YaHuDataset
+
+
+
+
+---
+
+1. 将所有数据单独放置，不在本项目中，可通过配置文件的方式访问
+2. 目录管理需要重新配置
+
+
+
