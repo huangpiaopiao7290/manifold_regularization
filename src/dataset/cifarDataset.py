@@ -23,13 +23,13 @@ class CiFarDataset(Dataset):
 
         if os.path.split(self.root)[-1] == "train":
             # 加载训练集
-            unlabeled_dir = os.path.join(root, "unlabel")
+            unlabeled_dir = os.path.join(root, "unlabeled")
             for image_name in os.listdir(unlabeled_dir):
                 image_path_unlabeled = os.path.join(unlabeled_dir, image_name)
                 self.samples.append((image_path_unlabeled, -1))       # -1 表示无标签
 
-                # 验证集
-                labeled_dir = os.path.join(self.root, "label")                # xxx/train/label
+            # 验证集
+            labeled_dir = os.path.join(self.root, "label")                # xxx/train/label
 
         for label in os.listdir(labeled_dir):
             label_dir = os.path.join(labeled_dir, label)                        # xxx/train/label/xxx

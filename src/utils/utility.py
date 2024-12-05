@@ -87,7 +87,7 @@ class Utility:
 
         return match_files
 
-    @staticmethod
-    def setup_logging(self, ):
+    # @staticmethod
+    # def setup_logging(self, ):
 
 

@@ -8,19 +8,12 @@ from torchvision import transforms
 
 from .cifarDataset import CiFarDataset
 
-# cifar-10路径
-# cifar10 = os.path.join(os.getcwd(), "data", "processed", "cifar-10")
-#
-# label_names = ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
-# labels_dict = {}
-# for idx, name in enumerate(label_names):
-#     labels_dict[name] = idx
 
 class CiFar10Dataset(CiFarDataset):
     def __init__(self, root, label_names_dict, transform=None) -> None:
         super(CiFar10Dataset, self).__init__(root, label_names_dict, transform)
 
-def get_data10_loaders(root, label_names_dict,  batch_size=64, num_workers=4):
+def get_data10_loaders(root, label_names_dict,  batch_size=64, num_workers=5):
     """
     :@param root: 数据集根目录
     """

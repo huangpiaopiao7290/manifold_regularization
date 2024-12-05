@@ -12,7 +12,7 @@ class CiFar100Dataset(CiFarDataset):
     def __init__(self, root, label_names_dict, transform=None):
         super(CiFar100Dataset, self).__init__(root, label_names_dict, transform)
 
-def get_data100_loaders(root, label_names_dict,  batch_size=64, num_workers=4):
+def get_data100_loaders(root, label_names_dict,  batch_size=64, num_workers=5):
     """
     :@param root: 数据集根目录
     """
