@@ -81,7 +81,6 @@ for idx, name in enumerate(ciFar100_label_names):
     ciFar100_labelNames[name] = idx
 # -----------------------------------------------
 
-
 data_dir = os.path.join(os.getcwd(), "data", "processed")
 
 _model = VggNet(num_class=10).to(_device)
@@ -223,8 +222,6 @@ if __name__ == '__main__':
                       lambda_s=_lambda_s,
                       best_test_accuracy=_best_test_accuracy)
 
-
-
     # 训练
     for epoch in range(_epochs):
         logging.log(logging.INFO, "epoch is {}".format(epoch))
@@ -246,9 +243,10 @@ if __name__ == '__main__':
                                          ts_epoch=epoch,
                                          ts_dataset_name='CiFAR100')
 
+        # 更新参数
         avg_test_accuracy = (test_accuracy_c10 + test_accuracy_c100) / 2
         trainer.adjust_hyperparameters(avg_test_accuracy)
-
+        # 保存模型
         trainer.save_model(avg_test_accuracy, epoch)
 
     logging.info("Training completed.")

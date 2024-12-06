@@ -18,7 +18,7 @@ def get_data10_loaders(root, label_names_dict,  batch_size=64, num_workers=5):
     :@param root: 数据集根目录
     """
     train_transform = transforms.Compose([
-        # transforms.RandomResizedCrop((28, 28)),  # CIFAR-10 的标准尺寸是 32x32
+        # transforms.RandomResizedCrop((28, 28)),  # CiFAR-10 的标准尺寸是 32x32
         transforms.RandomHorizontalFlip(0.5),
         transforms.RandomVerticalFlip(0.5),
         transforms.RandomGrayscale(0.1),

@@ -25,15 +25,23 @@ class LossFunctionsPWMR:
         features = features.to(self.device)
         pairwise_distances = torch.cdist(features, features, p=2.0)
         _, indices = torch.topk(pairwise_distances, k, largest=False, dim=1)
-
         _n = features.shape[0]
         _w = torch.zeros((_n, _n), device=self.device)
 
+        # 遍历结点
+        # for i in range(_n):
+        #     for j in indices[i]:
+        #         if i != j:
+        #             dist = pairwise_distances[i, j]
+        #             _w[i, j] = torch.exp(-dist ** 2 / (2 * sigma ** 2))
+
+        # 为前k个邻接结点创建mask
+        mask = torch.zeros_like(_w, dtype=torch.bool, device=self.device)
         for i in range(_n):
-            for j in indices[i]:
-                if i != j:
-                    dist = pairwise_distances[i, j]
-                    _w[i, j] = torch.exp(-dist ** 2 / (2 * sigma ** 2))
+            mask[i, indices[i, 1:]] = True      # 不包括自己
+
+        # 添加高斯核得到边权重
+        _w[mask] = torch.exp(-pairwise_distances[mask] ** 2 / (2 * sigma ** 2))
 
         row_sum = _w.sum(dim=1, keepdim=True).view(-1, 1)
         _w = _w / (row_sum + 1e-8)
@@ -91,6 +99,18 @@ class LossFunctionsPWMR:
         mixed_x = lam * x1 + (1 - lam) * x2
         return mixed_x, lam
 
+    def mix_up2(self, x1, x2, alpha=0.75):
+        """
+        接受两个不同epoch的数据, 对无标签样本使用随机噪声
+        """
+        if x2 is None:
+            noise = torch.rand_like(x1) * 0.1
+            x2 = x1 + noise
+        
+        lam = torch.distributions.Beta(alpha, alpha).sample().to(x1.device)
+        mixed_x = lam * x1 + (1 - lam) * x2
+        return mixed_x, lam
+
     def consistency_loss(self, predictions, perturbed_predictions, mask):
         r"""
         Calculate the consistency loss.
@@ -118,16 +138,18 @@ class LossFunctionsPWMR:
         # 一致性损失
         unlabeled_images = images[unlabeled_mask]
         if unlabeled_images.size(0) > 0:
-            mixed_images, lam = self.mix_up(unlabeled_images, unlabeled_images)
+            # 使用不同的无标签样本进行MixUp，如果只有一个批次则使用随机噪声
+            shuffled_indices = torch.randperm(unlabeled_images.size(0))
+            mixed_images, lam = self.mix_up(unlabeled_images, unlabeled_images[shuffled_indices], alpha=0.75)
             mixed_outputs = model(mixed_images)
-
             with torch.no_grad():
                 teacher_outputs = model(unlabeled_images)
-            interpolated_teacher_outputs = lam * teacher_outputs + (1 - lam) * teacher_outputs
+                perturbed_teacher_outputs = model(mixed_images)
+            interpolated_teacher_outputs = lam.unsqueeze(1) * teacher_outputs + (1 - lam.unsqueeze(1)) * perturbed_teacher_outputs
             loss_consistency = self.consistency_loss(mixed_outputs, interpolated_teacher_outputs,
                                                      torch.ones_like(mixed_outputs[:, 0], dtype=torch.bool))
         else:
-            loss_consistency = 0.0
+            loss_consistency = torch.tensor(0.0, device=self.device)
 
         # 计算局部密度
         with torch.no_grad():

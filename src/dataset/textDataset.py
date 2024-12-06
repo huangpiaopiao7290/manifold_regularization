@@ -4,7 +4,6 @@ from torch.utils.data import Dataset, DataLoader
 import pandas as pd
 
 
-
 class TextDataset(Dataset):
     def __init__(self, df, tokenizer, max_len):
         self.df = df
