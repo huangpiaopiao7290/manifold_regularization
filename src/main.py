@@ -182,7 +182,6 @@ class Trainer:
 
 def clear_tensorboard_logs(path):
     if os.path.exists(path) and os.path.isdir(path):
-        logger.info("Deleting existing TensorBoard logs.")
         shutil.rmtree(path)
     os.makedirs(path, exist_ok=True)
     logger.info(f"TensorBoard log directory cleared: {path}")

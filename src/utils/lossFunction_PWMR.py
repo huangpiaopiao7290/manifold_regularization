@@ -1,7 +1,3 @@
-## @auther: pp
-## @date: 2024/10/30
-## @description:　
-
 import torch
 import torch.nn as nn
 
