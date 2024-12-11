@@ -1,6 +1,6 @@
-##  decode dataset
+# 最新代码见branch-2.0
 
-## init
+
 在根目录下新增folder：data/raw (存放原始数据集)
 ```
 data
