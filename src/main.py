@@ -1,6 +1,3 @@
-## @author: pp
-## @date: 2024/9/17
-## @description: 训练模型
 import shutil
 
 from models.vgg import VggNet
@@ -56,13 +53,13 @@ _best_test_accuracy = 90             # 准确率
 #                 数据集相关信息
 # -----------------------------------------------
 
-CiFAR10 = os.path.join(work_space, 'data/processed/cifar-10')
-CiFAR100 = os.path.join(work_space, 'data/processed/cifar-100')
+# CiFAR10 = os.path.join(work_space, 'data\\processed\\cifar-10')
+CiFAR100 = os.path.join(work_space, 'data\\processed\\cifar-100')
 
-ciFar10_labelNames = {}
-ciFar10_label_names = ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
-for idx, name in enumerate(ciFar10_label_names):
-    ciFar10_labelNames[name] = idx
+# ciFar10_labelNames = {}
+# ciFar10_label_names = ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
+# for idx, name in enumerate(ciFar10_label_names):
+#     ciFar10_labelNames[name] = idx
 
 ciFar100_labelNames = {}
 ciFar100_label_names = [
@@ -79,6 +76,7 @@ ciFar100_label_names = [
 ]
 for idx, name in enumerate(ciFar100_label_names):
     ciFar100_labelNames[name] = idx
+
 # -----------------------------------------------
 
 data_dir = os.path.join(os.getcwd(), "data", "processed")
@@ -115,13 +113,13 @@ class Trainer:
             # 无标签标记
             unlabeled_mask = (labels == -1)
             self.optimizer.zero_grad()
-            loss, w, local_identities = self.loss_func(model=self.model,
-                                                            outputs=outputs,
-                                                            images=inputs,
-                                                            labels=labels,
-                                                            unlabeled_mask=unlabeled_mask,
-                                                            lambda_c=self.lambda_c,
-                                                            lambda_s=self.lambda_s)
+            loss, w, local_identities = self.loss_func.total_loss(model=self.model,
+                                                                    outputs=outputs,
+                                                                    images=inputs,
+                                                                    labels=labels,
+                                                                    unlabeled_mask=unlabeled_mask,
+                                                                    lambda_c=self.lambda_c,
+                                                                    lambda_s=self.lambda_s)
             loss.backward()
             self.optimizer.step()
 
@@ -193,24 +191,25 @@ if __name__ == '__main__':
 
     logging.info("start...")
 
-    # 清楚tensorboard记录
+    # 清除tensorboard记录
     clear_tensorboard_logs(log_dir_tensorboard)
 
     try:
-        c10_train_loader, c10_test_loader = get_data10_loaders(root=CiFAR10,
-                                                             label_names_dict=ciFar10_labelNames,
-                                                             batch_size=_batch_size)
+        # c10_train_loader, c10_test_loader = get_data10_loaders(root=CiFAR10,
+        #                                                      label_names_dict=ciFar10_labelNames,
+        #                                                      batch_size=_batch_size)
+        # logging.info(f"ciFar10 Dataloader created, train samples: {len(c10_train_loader.dataset)},"
+        #              f" test samples: {len(c10_test_loader.dataset)}")
+
         c100_train_loader, c100_test_loader = get_data100_loaders(root=CiFAR100,
                                                                label_names_dict=ciFar100_labelNames,
                                                                batch_size=_batch_size)
-        logging.info(f"Data loaders created, train samples: {len(c10_train_loader.dataset)},"
-                     f" test samples: {len(c10_test_loader.dataset)}")
-        logging.info(f"Data loaders created, train samples: {len(c100_train_loader.dataset)},"
+        logging.info(f"ciFar100 Dataloader created, train samples: {len(c100_train_loader.dataset)},"
                      f" test samples: {len(c100_test_loader.dataset)}")
     except Exception as e:
-        logging.error(f"Failed to create data loaders: {e}")
+        logging.error(f"Failed to create dataloader: {e}")
         exit(1)
-
+ 
     # 初始化训练器
     trainer = Trainer(model=_model,
                       optimizer=_optimizer,
@@ -225,25 +224,26 @@ if __name__ == '__main__':
     for epoch in range(_epochs):
         logging.log(logging.INFO, "epoch is {}".format(epoch))
 
-        # 训练CiFAR10
-        trainer.train(tr_dataloader=c10_train_loader,
-                      tr_epoch=epoch,
-                      tr_dataset_name='CiFAR10')
+        # # 训练CiFAR10
+        # trainer.train(tr_dataloader=c10_train_loader,
+        #               tr_epoch=epoch,
+        #               tr_dataset_name='CiFAR10')
         # 训练CiFAR100
         trainer.train(tr_dataloader=c100_train_loader,
                       tr_epoch=epoch,
                       tr_dataset_name='CiFAR100')
-        # 测试CiFAR10
-        test_accuracy_c10 = trainer.test(ts_dataloader=c10_test_loader,
-                                         ts_epoch=epoch,
-                                         ts_dataset_name='CiFAR10')
+        # # 测试CiFAR10
+        # test_accuracy_c10 = trainer.test(ts_dataloader=c10_test_loader,
+        #                                  ts_epoch=epoch,
+        #                                  ts_dataset_name='CiFAR10')
         # 测试CiFAR100
         test_accuracy_c100 = trainer.test(ts_dataloader=c100_test_loader,
                                          ts_epoch=epoch,
                                          ts_dataset_name='CiFAR100')
 
         # 更新参数
-        avg_test_accuracy = (test_accuracy_c10 + test_accuracy_c100) / 2
+        # avg_test_accuracy = (test_accuracy_c10 + test_accuracy_c100) / 2
+        avg_test_accuracy = test_accuracy_c100
         trainer.adjust_hyperparameters(avg_test_accuracy)
         # 保存模型
         trainer.save_model(avg_test_accuracy, epoch)

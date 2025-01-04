@@ -2,13 +2,8 @@ import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
 import torchvision.transforms as transforms
-
 import numpy as np
-
 from src.utils.utility import Utility
-
-# TODO 这里本来是要继承ciFar100Processor的，但是ciFar100Processor有问题，索性删除了，
-#  而且这个预处理数据也只用的上一次，没必要封装， 后面有时间再重写
 
 
 ciFar100_labels = [

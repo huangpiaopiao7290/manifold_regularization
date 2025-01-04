@@ -1,13 +1,13 @@
-import os
+import torch
 
-a = ("C:\\piao_programs\\py_programs\\DeepLearningProject"
-     "\\Manifold_SmiLearn\\data\\processed\\cifar-100\\train\\label")
-print(os.listdir(a))
+# 检查 CUDA 是否可用
+if torch.cuda.is_available():
+    device = torch.device("cuda")
+else:
+    device = torch.device("cpu")
 
-samples = []
-for label in os.listdir(a):
-    label_dir = os.path.join(a, label)          # train/label/xxx
-    # label = os.path.split(label_dir)[-1]
-    for image_name in os.listdir(label_dir):
-        image_path_labeled = os.path.join(label_dir, image_name)
-        samples.append((image_path_labeled, -1))
+print(f"Using device: {device}")
+
+# 打印更多调试信息
+print(f"Device type: {type(device)}")
+print(f"is_cuda: {device.type == 'cuda'}")

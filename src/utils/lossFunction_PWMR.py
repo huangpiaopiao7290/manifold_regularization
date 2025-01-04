@@ -24,13 +24,6 @@ class LossFunctionsPWMR:
         _n = features.shape[0]
         _w = torch.zeros((_n, _n), device=self.device)
 
-        # 遍历结点
-        # for i in range(_n):
-        #     for j in indices[i]:
-        #         if i != j:
-        #             dist = pairwise_distances[i, j]
-        #             _w[i, j] = torch.exp(-dist ** 2 / (2 * sigma ** 2))
-
         # 为前k个邻接结点创建mask
         mask = torch.zeros_like(_w, dtype=torch.bool, device=self.device)
         for i in range(_n):
@@ -38,7 +31,6 @@ class LossFunctionsPWMR:
 
         # 添加高斯核得到边权重
         _w[mask] = torch.exp(-pairwise_distances[mask] ** 2 / (2 * sigma ** 2))
-
         row_sum = _w.sum(dim=1, keepdim=True).view(-1, 1)
         _w = _w / (row_sum + 1e-8)
 
@@ -58,7 +50,6 @@ class LossFunctionsPWMR:
         """
         degrees = adj_matrix.sum(dim=1)
         local_densities = degrees / k
-        #
         return local_densities
 
     def smoothness_loss(self, features, adj_matrix, local_densities):
@@ -74,14 +65,11 @@ class LossFunctionsPWMR:
         # 首先计算图拉普拉斯矩阵 特征矩阵的乘积：(N, D) x (N, N) = (N, D)
         laplacian_matrix = self.build_laplacian_matrix(adj_matrix)
         diff = torch.mm(laplacian_matrix, features)
-
         # 然后计算差值的平方和
         diff_squared = diff ** 2
-
         # 将局部密度与差值的平方和相乘
         # local_densities: (N), diff_squared: (N, D)
         weighted_diff_squared = local_densities.unsqueeze(1) * diff_squared
-
         # 计算总和并除以样本数
         smoothness_loss = torch.sum(weighted_diff_squared) / features.size(0)
 
@@ -141,9 +129,13 @@ class LossFunctionsPWMR:
             with torch.no_grad():
                 teacher_outputs = model(unlabeled_images)
                 perturbed_teacher_outputs = model(mixed_images)
-            interpolated_teacher_outputs = lam.unsqueeze(1) * teacher_outputs + (1 - lam.unsqueeze(1)) * perturbed_teacher_outputs
-            loss_consistency = self.consistency_loss(mixed_outputs, interpolated_teacher_outputs,
-                                                     torch.ones_like(mixed_outputs[:, 0], dtype=torch.bool))
+            lam = lam.view(-1)                      # shape [N] 一维张量
+            lam_expanded = lam.unsqueeze(-1)        # 扩展lam  [N] -> [N, 1]
+            interpolated_teacher_outputs = lam_expanded * teacher_outputs + (1 - lam_expanded) * perturbed_teacher_outputs
+            loss_consistency = self.consistency_loss(mixed_outputs,
+                                                     interpolated_teacher_outputs,
+                                                     torch.ones_like(mixed_outputs[:, 0],
+                                                                     dtype=torch.bool))
         else:
             loss_consistency = torch.tensor(0.0, device=self.device)
 

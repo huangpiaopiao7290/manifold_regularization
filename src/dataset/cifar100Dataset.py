@@ -42,3 +42,4 @@ def get_data100_loaders(root, label_names_dict,  batch_size=64, num_workers=5):
 
     return dataloader_train, dataloader_test
 
+      

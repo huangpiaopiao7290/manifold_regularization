@@ -8,7 +8,7 @@ import torch.nn.functional as F
 
 class VggBase(nn.Module):
 
-    def __init__(self, num_class=10) -> None:
+    def __init__(self) -> None:
         super(VggBase, self).__init__()
 
         # 3 * 28 * 28
