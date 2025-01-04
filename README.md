@@ -1,4 +1,4 @@
-# 最新代码见branch-2.0
+# 见新分支text
 
 
 在根目录下新增folder：data/raw (存放原始数据集)
