@@ -104,7 +104,7 @@ class LossFunctionsPWMR:
         loss = (loss * mask.unsqueeze(1)).sum() / (mask.sum() + 1e-8)
         return loss
 
-    def total_loss(self, model, outputs, images, labels, unlabeled_mask, lambda_c, lambda_s):
+    def total_loss(self, model, outputs, data, labels, unlabeled_mask, lambda_c, lambda_s):
         r"""
         Calculate the total loss with the PW_MR algorithm.
         """
@@ -120,7 +120,7 @@ class LossFunctionsPWMR:
         loss_supervised = self.criterion_supervised(labeled_outputs, labeled_labels)
 
         # 一致性损失
-        unlabeled_images = images[unlabeled_mask]
+        unlabeled_images = data[unlabeled_mask]
         if unlabeled_images.size(0) > 0:
             # 使用不同的无标签样本进行MixUp，如果只有一个批次则使用随机噪声
             shuffled_indices = torch.randperm(unlabeled_images.size(0))
@@ -142,7 +142,7 @@ class LossFunctionsPWMR:
         # 计算局部密度
         with torch.no_grad():
             # 提取特征
-            features = model.extract_features(images)
+            features = model.extract_features(data)
 
         adj_matrix = self.compute_adjacency_matrix(features)
         local_densities = self.calculate_local_density(adj_matrix)

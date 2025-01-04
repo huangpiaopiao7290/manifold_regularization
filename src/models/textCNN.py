@@ -42,25 +42,20 @@ class TextCNN(nn.Module):
 
         self.embedding_matrix = embedding_matrix
 
-        # TODO 分类器参数要修改
         self.classifier = nn.Linear(6, num_classes)
 
         self.loss_func = nn.CrossEntropyLoss()
 
-    def forward(self, batch_idx, batch_labels=None):
+    def forward(self, batch_idx):
 
         feature = self.extract_features(batch_idx)
         pre = self.classifier(feature.squeeze(-1))
 
-        if batch_labels is not None:
-            loss = self.loss_func(pre, batch_labels)
-            return loss
-        else:
-            return torch.argmax(pre, dim=-1)
+        return pre
 
-    def extract_features(self, batch_idx):
+    def extract_features(self, x):
         # batch_embedding = self.embedding_matrix(x).unsqueeze(1)
-        batch_embedding = self.embedding_matrix(batch_idx)
+        batch_embedding = self.embedding_matrix(x)
         result_block1 = self.block1(batch_embedding)
         result_block2 = self.block2(batch_embedding)
         result_block3 = self.block3(batch_embedding)

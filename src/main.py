@@ -156,7 +156,7 @@ class Trainer:
 
         test_accuracy = 100 * test_correct / test_total
         logging.info(f"{ts_dataset_name} Test Accuracy: {test_accuracy:.2f}%")
-        self.writer.add_scalar('Validation/Accuracy', test_accuracy, ts_epoch)
+        self.writer.add_scalar('Test/Accuracy', test_accuracy, ts_epoch)
 
         return test_accuracy
 
